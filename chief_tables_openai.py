@@ -47,18 +47,19 @@ def loadData():
     splits
 
 
-vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=OpenAIEmbeddings())
 
-
-retriever = vectorstore.as_retriever()
-
-llm = ChatOpenAI(model="gpt-3.5-turbo-0125", api_key=openai_api_key)
 
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
 def LLM_init():
+    vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=OpenAIEmbeddings(api_key=openai_api_key))
+
+
+    retriever = vectorstore.as_retriever()
+
+    llm = ChatOpenAI(model="gpt-3.5-turbo-0125", api_key=openai_api_key)
     llmprompt = PromptTemplate(
         template="""
     You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. 
@@ -86,7 +87,7 @@ def LLM_init():
 def get_chief(docs):
     return " \n - ".join(set(",".join([doc.metadata['episode'], doc.metadata['position'], doc.metadata['url']]) for doc in docs))
 
-st.title("Echo Bot")
+st.title("Chief's Table Bot")
 
 # Initialize chat history
 if "messages" not in st.session_state:
