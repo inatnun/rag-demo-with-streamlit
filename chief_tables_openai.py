@@ -21,6 +21,8 @@ from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnableParallel
+from google.oauth2 import service_account
+from google.cloud import bigquery
 
 PROJECT_ID = "skooldio-vertex-ai-demo"
 REGION = "asia-southeast1"
@@ -30,7 +32,9 @@ TABLE = "chief_table_dataset_openai_embedding"  # @param {type: "string"}
 
 openai_api_key = st.sidebar.text_input('OpenAI API Key', type='password')
 
-
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"]
+)
 
 # Create a connection object.
 def loadData():
@@ -67,6 +71,7 @@ def LLM_init():
         location=REGION,
         embedding=OpenAIEmbeddings(api_key=openai_api_key),
         distance_strategy=DistanceStrategy.EUCLIDEAN_DISTANCE,
+        credentials=credentials
     )
 
     retriever = vectorstore.as_retriever()
