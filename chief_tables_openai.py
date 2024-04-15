@@ -30,20 +30,11 @@ TABLE = "chief_table_dataset_openai_embedding"  # @param {type: "string"}
 
 openai_api_key = st.sidebar.text_input('OpenAI API Key', type='password')
 
-vectorstore = BigQueryVectorSearch(
-    project_id=PROJECT_ID,
-    dataset_name=DATASET,
-    table_name=TABLE,
-    location=REGION,
-    embedding=OpenAIEmbeddings(api_key=openai_api_key),
-    distance_strategy=DistanceStrategy.EUCLIDEAN_DISTANCE,
-)
+
 
 # Create a connection object.
 def loadData():
     conn = st.connection("gsheets", type=GSheetsConnection)
-
-
 
     df = conn.read(usecols=[0,1,2,3],nrows=9)
 
@@ -59,8 +50,8 @@ def loadData():
     all_texts = [d.page_content for d in splits]
     # st.write(all_texts)
     metadatas = [t.metadata for t in splits]
-    # # 
-    vectorstore.add_texts(all_texts, metadatas=metadatas)
+    # # # 
+    # vectorstore.add_texts(all_texts, metadatas=metadatas)
 
 # loadData()
 
@@ -69,6 +60,14 @@ def format_docs(docs):
 
 
 def LLM_init():
+    vectorstore = BigQueryVectorSearch(
+        project_id=PROJECT_ID,
+        dataset_name=DATASET,
+        table_name=TABLE,
+        location=REGION,
+        embedding=OpenAIEmbeddings(api_key=openai_api_key),
+        distance_strategy=DistanceStrategy.EUCLIDEAN_DISTANCE,
+    )
 
     retriever = vectorstore.as_retriever()
 
