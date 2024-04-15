@@ -14,7 +14,7 @@ import base64
 import vertexai
 from vertexai.generative_models import GenerativeModel, Part, FinishReason
 import vertexai.preview.generative_models as generative_models
-from langchain import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain.memory import ConversationBufferMemory
 import time
 from langchain_community.vectorstores import Chroma
@@ -26,9 +26,19 @@ PROJECT_ID = "skooldio-vertex-ai-demo"
 REGION = "asia-southeast1"
 # @title Dataset and Table { display-mode: "form" }
 DATASET = "my_langchain_dataset"  # @param {type: "string"}
-TABLE = "chief_table_dataset"  # @param {type: "string"}
+TABLE = "chief_table_dataset_openai_embedding"  # @param {type: "string"}
 
 openai_api_key = st.sidebar.text_input('OpenAI API Key', type='password')
+
+vectorstore = BigQueryVectorSearch(
+    project_id=PROJECT_ID,
+    dataset_name=DATASET,
+    table_name=TABLE,
+    location=REGION,
+    embedding=OpenAIEmbeddings(api_key=openai_api_key),
+    distance_strategy=DistanceStrategy.EUCLIDEAN_DISTANCE,
+)
+
 # Create a connection object.
 def loadData():
     conn = st.connection("gsheets", type=GSheetsConnection)
@@ -45,21 +55,24 @@ def loadData():
 
     splits = text_splitter.split_documents(docs)
     splits
+    
+    all_texts = [d.page_content for d in splits]
+    # st.write(all_texts)
+    metadatas = [t.metadata for t in splits]
+    # # 
+    vectorstore.add_texts(all_texts, metadatas=metadatas)
 
-
-
+# loadData()
 
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
 def LLM_init():
-    vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=OpenAIEmbeddings(api_key=openai_api_key))
-
 
     retriever = vectorstore.as_retriever()
 
-    llm = ChatOpenAI(model="gpt-3.5-turbo-0125", api_key=openai_api_key)
+    llm = ChatOpenAI(model="gpt-4-turbo-2024-04-09", api_key=openai_api_key)
     llmprompt = PromptTemplate(
         template="""
     You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. 
@@ -110,6 +123,7 @@ def response_generator(prompt):
     llm_chain = LLM_init()
     msg = llm_chain.invoke(prompt)
     ref = get_chief(msg["context"])
+    # st.write(msg["context"])
     response_msg = msg["answer"]+" \n \n **ใช้วัตถุดิบในการปรุงแต่งจาก**: \n - "+ref
     for line in (response_msg.split("\n")):
         for word in line.split():
