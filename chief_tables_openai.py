@@ -23,21 +23,25 @@ from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnableParallel
 from google.oauth2 import service_account
 from google.cloud import bigquery
+from langchain_community.embeddings import HuggingFaceHubEmbeddings, HuggingFaceEmbeddings
 
 PROJECT_ID = "skooldio-vertex-ai-demo"
 REGION = "asia-southeast1"
 # @title Dataset and Table { display-mode: "form" }
 DATASET = "my_langchain_dataset"  # @param {type: "string"}
-TABLE = "chief_table_dataset_openai_embedding"  # @param {type: "string"}
+TABLE = "chief_table_dataset_with_bge3m_embedding"  # @param {type: "string"}
 
 openai_api_key = st.sidebar.text_input('OpenAI API Key', type='password')
 
 credentials = service_account.Credentials.from_service_account_info(
     st.secrets["gcp_service_account"]
 )
+inference_api_key = st.secrets['inference_api_key']
 
+embedding_function = HuggingFaceHubEmbeddings(model="BAAI/bge-m3",huggingfacehub_api_token=inference_api_key)
 # Create a connection object.
 def loadData():
+    
     conn = st.connection("gsheets", type=GSheetsConnection)
 
     df = conn.read(usecols=[0,1,2,3],nrows=9)
@@ -69,7 +73,7 @@ def LLM_init():
         dataset_name=DATASET,
         table_name=TABLE,
         location=REGION,
-        embedding=OpenAIEmbeddings(api_key=openai_api_key),
+        embedding=embedding_function,
         distance_strategy=DistanceStrategy.EUCLIDEAN_DISTANCE,
         credentials=credentials
     )
@@ -127,7 +131,7 @@ def response_generator(prompt):
     llm_chain = LLM_init()
     msg = llm_chain.invoke(prompt)
     ref = get_chief(msg["context"])
-    # st.write(msg["context"])
+    st.write(msg["context"])
     response_msg = msg["answer"]+" \n \n **ใช้วัตถุดิบในการปรุงแต่งจาก**: \n - "+ref
     for line in (response_msg.split("\n")):
         for word in line.split():
