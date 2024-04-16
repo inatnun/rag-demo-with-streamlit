@@ -1,8 +1,6 @@
 import streamlit as st
 from langchain_community.retrievers import GoogleVertexAISearchRetriever
 from google.oauth2 import service_account
-import vertexai
-from vertexai.generative_models import GenerativeModel
 from langchain_google_genai import GoogleGenerativeAI
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -18,7 +16,7 @@ DATA_STORE_ID = "skooldio-courses_1711534793759"  # Set to your data store ID
 credentials = service_account.Credentials.from_service_account_info(
     st.secrets["gcp_service_account"]
 )
-vertexai.init(project=PROJECT_ID, location=REGION, credentials=credentials)
+
 retriever = GoogleVertexAISearchRetriever(
     project_id=PROJECT_ID,
     location_id=LOCATION_ID,
